@@ -1,3 +1,7 @@
+![status](https://img.shields.io/badge/status-live-brightgreen)
+![stack](https://img.shields.io/badge/stack-Vue3%20%2B%20Laravel%20%2B%20PostgreSQL-blue)
+[![demo](https://img.shields.io/badge/demo-open%20app-000)](https://rbplus-rank-manager.site)
+
 # REFLEC BEAT plus レベル11 難易度表＆クリアランク管理サイト
 
 私は音楽ゲーム **REFLEC BEAT plus** が大好きです。  
