@@ -105,8 +105,8 @@
 ---
 
 ## リポジトリリンク
-- [フロントエンド（Vue 3 + TS + Vite）](https://github.com/yourname/score-manager-frontend)  
-- [バックエンド（Laravel 12 + Sanctum + Blade）](https://github.com/yourname/score-manager-backend)  
+- [フロントエンド（Vue 3 + TS + Vite）](https://github.com/misato729/score-manager-frontend)  
+- [バックエンド（Laravel 12 + Sanctum + Blade）](https://github.com/misato729/score-manager-backend)  
 
 ---
 
