@@ -19,6 +19,10 @@
 
 ![MAP](./public/map.png)
 
+- **例**（開発者のマイページ）
+  - [難易度表](https://rbplus-rank-manager.site/dashboard?user=10)
+  - [行脚履歴](https://rbplus-rank-manager.site/visited_shops?user=10)
+
 ## 背景
 音楽ゲーム上級者の間では、公式難易度に加えて有志により作成された非公式の「難易度表」が活用されることが多い。<br>
 例えばKONAMIの人気音楽ゲーム「beatmania ⅡDX」は最高レベルは12であるが、Lv12の中でも難易度の差が激しく、有志によってLv12をさらに数段階に分ける試みがなされている。<br>
