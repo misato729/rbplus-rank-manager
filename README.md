@@ -13,11 +13,14 @@
 - **URL**：[https://rbplus-rank-manager.site](https://rbplus-rank-manager.site)
 
 - **画面イメージ**
-![TOP](./public/top.png)
+### TOP画面
+<img src="./public/top.png" width="700">
 
-![TIER](./public/tier.png)
+### 難易度表画面
+<img src="./public/tier.png" width="700">
 
-![MAP](./public/map.png)
+### 設置店舗マップ画面
+<img src="./public/map.png" width="700">
 
 - **例**（開発者のマイページ）
   - [難易度表](https://rbplus-rank-manager.site/dashboard?user=10)
