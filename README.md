@@ -2,7 +2,10 @@
 ![stack](https://img.shields.io/badge/stack-Vue3%20%2B%20Laravel%20%2B%20PostgreSQL-blue)
 [![demo](https://img.shields.io/badge/demo-open%20app-000)](https://rbplus-rank-manager.site)
 
-# 概要
+本リポジトリは、「REFLEC BEAT plus Lv11 難易度表＆クリアランク管理サイト」開発プロジェクトの<br>
+[フロントエンド](https://github.com/misato729/score-manager-frontend)と[バックエンド](https://github.com/misato729/score-manager-backend) の統合リポジトリである。
+
+# フロントエンド概要
 **REFLEC BEAT plus Lv11 難易度表＆クリアランク管理サイト**
 - **目的**：音楽ゲーム REFLEC BEAT plus のLv11のクリアランク・フルコンボ状況の管理を行う。
 - **機能**：
@@ -55,7 +58,6 @@ https://rbplus-rank-manager.site<br>
 このシステムはユーザー向け画面と管理画面に分かれている。
 ユーザー向け画面のフロントエンドはVue 3 + Vite を用いたSPAとして構築されており、バックエンドのLaravel（Breeze + Sanctum）とAPIで連携したセキュアな認証処理を実装している。インフラはVercelにホストしている。
 管理画面はLaravel Bladeでフロントエンドを構築し、API経由ではなく直接DBにアクセスしている。インフラはRenderにホストし、無料プランのスリープ対策としてGoogle Apps Scriptで10分に1回自動的にアクセスを行うスクリプトを組んでいる。
-
 
 DNS管理はムームードメインで行い、ドメイン名 `rbplus-rank-manager.site` によって独自ドメインで運用している。
 
@@ -127,7 +129,7 @@ DNS管理はムームードメインで行い、ドメイン名 `rbplus-rank-man
 
 ![ER図](./public/er-diagram-20250814.png)
 
-## APIレスポンス
+## ① APIレスポンス
 本APIは、フロントエンドとのデータ送受信に利用する。
 全エンドポイントは JSON 形式でレスポンスを返す。
 認証が必要なエンドポイントは Laravel Sanctum によるトークン認証を使用。
@@ -158,7 +160,7 @@ DNS管理はムームードメインで行い、ドメイン名 `rbplus-rank-man
 | GET  | `/visited`       | 必要 | 自分の行脚店舗履歴を取得   |
 | GET  | `/visited-shops?user={id}` | 不要 | {id}のユーザーの行脚履歴を取得 |
 
-## 管理システム
+## ② 管理システム
 本管理システムは **Laravel Blade（SSR）** を用いて実装したバックエンド直結の管理画面であり、API経由ではなく直接データベースにアクセスして管理を行う。
 
 ### 機能概要
@@ -205,9 +207,6 @@ DNS管理はムームードメインで行い、ドメイン名 `rbplus-rank-man
 # 今後の展望
 管理画面について、現在は設置店舗情報の管理機能のみだが、ユーザー管理機能や楽曲管理機能もつけていきたい。
 
-
-## リポジトリリンク
-- [フロントエンド（Vue 3 + TS + Vite）](https://github.com/misato729/score-manager-frontend)  
-- [バックエンド（Laravel 12 + Sanctum + Blade）](https://github.com/misato729/score-manager-backend)  
-
-
+## 各リポジトリリンク
+- [フロントエンド](https://github.com/misato729/score-manager-frontend)  
+- [バックエンド](https://github.com/misato729/score-manager-backend)  
