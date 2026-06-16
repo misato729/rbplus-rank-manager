@@ -12,7 +12,7 @@
   - Lv11の譜面を非公式に10段階に定義した「難易度表」を閲覧可能
   - 譜面ごとにクリアランク・フルコンボ状況を保存
   - Google Maps APIで店舗情報閲覧＆チェックイン機能
-- **使用技術**：Vue 3 + TypeScript / Laravel 12 / PostgreSQL / Vercel + Render
+- **使用技術**：Vue 3 + TypeScript / Laravel 12 / PostgreSQL / Vercel + Render + Neon
 - **URL**：[https://rbplus-rank-manager.site](https://rbplus-rank-manager.site)
 
 - **画面イメージ**
@@ -105,10 +105,10 @@ DNS管理はムームードメインで行い、ドメイン名 `rbplus-rank-man
 |---------------|---------------------------------------------------------|
 | フロントエンド | Vue 3, Vite, TypeScript, Pinia, Vue Router, Axios     |
 | バックエンド   | Laravel 12, Laravel Breeze, Laravel Sanctum, Laravel Blade     |
-| インフラ       | Vercel（フロントエンド）, Render（バックエンド/DB）           |
-| データベース   | SQLite（ローカル環境）, PostgreSQL（本番環境/Render）         |
+| インフラ       | Vercel（フロントエンド）, Render（バックエンド ~~/DB~~）,  Neon(DB) ※2026/6/14~ |
+| データベース   | SQLite（ローカル環境）, PostgreSQL（本番環境/Neon）         |
 | デザイン       | Figma（画面設計）|
-| その他         | Google Maps API, GitHub, ChatGPT |
+| その他         | Google Maps API, GitHub, ChatGPT, Codex |
 
 # CI/CD
 本プロジェクトは GitHub Actions + Vercel による CI/CD を導入している。
