@@ -75,9 +75,12 @@ SPAの認証はLaravel SanctumによるCookie・セッション認証とCSRF保�
 
 ![店舗情報の自動同期](./public/Architecture-shop-sync-20261023.png)
 
-バックエンドのGitHub Actionsが毎日07:30（日本時間、開始が遅れる場合あり）にLaravelの `shops:sync-konami` コマンドを実行する。KONAMI公式の設置店舗検索を全47都道府県分取得し、都道府県・店舗名で照合する。Renderの起動状態に依存せず、ActionsからNeonへ直接接続する。
+Google Apps Script（GAS）が毎日07:00（日本時間）を指定してGitHub Actionsへ起動依頼する。通常は本実行と7時台の予備確認の計2回GASが動作し、店舗同期は1日1回行う。GitHubへの起動依頼に失敗した場合だけ7時台に再試行する。自動の起動依頼は07:00以上08:00未満に限り、実際の開始にはGASの遅延やGitHub runnerの待ち時間が加わる。
+
+GitHub ActionsがLaravelの `shops:sync-konami` コマンドを実行する。KONAMI公式の設置店舗検索を全47都道府県分取得し、都道府県・店舗名で照合する。Renderの起動状態に依存せず、ActionsからNeonへ直接接続する。
 
 - すべての取得が正常に完了した後、掲載状況を更新する。取得失敗時は更新しない。
+- 起動依頼の受付後に同期処理が失敗した場合は、自動で再実行せず原因確認後に手動実行する。
 - 5日連続で未掲載の既存店舗を非公開にする。自動非公開にした店舗が公式検索に復帰した場合は再公開する。
 - 不在日数は日本時間の暦日単位で数え、同日の再実行では加算しない。取得失敗・未実行で確認が途切れた場合は、次の正常な未掲載確認を1日目とする。
 - 手動で非公開にした店舗や削除済み店舗は自動再公開しない。新規店舗の登録や住所・価格・台数の自動更新は行わず、店舗データ・行脚履歴を削除しない。
@@ -226,7 +229,7 @@ PKは主キー、FKは外部キー、UKは一意キーを表す。ユーザー�
 | バックエンド   | PHP 8.3, Laravel 12, Laravel Breeze, Laravel Sanctum, Laravel Blade     |
 | インフラ       | Vercel（フロントエンド配信）, Render（Laravel）, Neon（DB） |
 | データベース   | PostgreSQL（本番 / Neon）, SQLite（ローカル・テスト）, PostgreSQL（CIの一部テスト） |
-| 定期実行・通知 | GitHub Actions（店舗同期）, Sentry（イベント・Issue Alert通知） |
+| 定期実行・通知 | Google Apps Script（予約・起動依頼）, GitHub Actions（店舗同期）, Sentry（イベント・Issue Alert通知） |
 | デザイン       | Figma（画面設計）|
 | その他         | Google Maps API, Google Forms, 忍者AdMax, GitHub, ChatGPT, Codex |
 
