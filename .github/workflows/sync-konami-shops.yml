@@ -1,0 +1,84 @@
+name: Sync KONAMI shops
+run-name: Sync KONAMI shops / ${{ inputs.scheduled_on != '' && format('GAS {0} 07:00 JST', inputs.scheduled_on) || 'manual' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '変更候補だけを表示し、データベースを更新しない'
+        required: true
+        type: boolean
+        default: true
+      test_notification:
+        description: '店舗の状態を変更せず、Sentryのテスト通知だけを送る'
+        required: true
+        type: boolean
+        default: false
+      scheduled_on:
+        description: 'GASが指定する日本時間の予定日（YYYY-MM-DD）。手動実行時は空欄'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-konami-shops
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # 手動実行時も、本番DBにはデフォルトブランチのコードだけを接続する。
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    timeout-minutes: 15
+    env:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      DB_CONNECTION: pgsql
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      LOG_CHANNEL: stderr
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: dom, mbstring, pdo_pgsql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress
+
+      - name: Sync published shops
+        env:
+          DB_URL: ${{ secrets.SHOP_SYNC_DATABASE_URL }}
+          SHOP_SYNC_SENTRY_DSN: ${{ secrets.SHOP_SYNC_SENTRY_DSN }}
+          SHOP_SYNC_ADMIN_URL: ${{ vars.SHOP_SYNC_ADMIN_URL || 'https://score-manager-backend.onrender.com' }}
+          SHOP_SYNC_GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          TEST_NOTIFICATION: ${{ github.event_name == 'workflow_dispatch' && inputs.test_notification && 'true' || 'false' }}
+        shell: bash
+        run: |
+          if [[ "$TEST_NOTIFICATION" == 'true' ]]; then
+            php artisan shops:test-sync-notification
+          else
+            if [[ -z "$DB_URL" ]]; then
+              echo '::error::Repository secret SHOP_SYNC_DATABASE_URL is required.'
+              exit 1
+            fi
+
+            if [[ "$DRY_RUN" == 'true' ]]; then
+              php artisan shops:sync-konami --dry-run
+            else
+              php artisan shops:sync-konami
+            fi
+          fi
