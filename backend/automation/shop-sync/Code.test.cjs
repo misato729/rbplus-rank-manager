@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, 'Code.gs'), 'utf8');
 const token = 'private-test-token-must-never-be-logged';
 const lastDayKey = 'SHOP_SYNC_LAST_DISPATCH_DAY';
-const dispatchUrl = 'https://api.github.com/repos/misato729/score-manager-backend/actions/workflows/sync-konami-shops.yml/dispatches';
+const dispatchUrl = 'https://api.github.com/repos/misato729/rbplus-rank-manager/actions/workflows/sync-konami-shops.yml/dispatches';
 const activeWorkflow = { code: 200, body: JSON.stringify({ state: 'active' }) };
 let triggerId = 0;
 
@@ -204,7 +204,7 @@ for (const code of [200, 204]) {
     assert.equal(app.releases, 1);
     assert.doesNotMatch(JSON.stringify(result) + app.logs.join('\n'), new RegExp(token));
     if (code === 200) {
-      assert.equal(result.runUrl, 'https://github.com/misato729/score-manager-backend/actions/runs/123');
+      assert.equal(result.runUrl, 'https://github.com/misato729/rbplus-rank-manager/actions/runs/123');
     }
   });
 }
