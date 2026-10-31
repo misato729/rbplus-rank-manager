@@ -1,6 +1,6 @@
 const SHOP_SYNC_TIME_ZONE = 'Asia/Tokyo';
-const SHOP_SYNC_WORKFLOW_URL = 'https://api.github.com/repos/misato729/score-manager-backend/actions/workflows/sync-konami-shops.yml';
-const SHOP_SYNC_RUN_URL = 'https://github.com/misato729/score-manager-backend/actions/runs/';
+const SHOP_SYNC_WORKFLOW_URL = 'https://api.github.com/repos/misato729/rbplus-rank-manager/actions/workflows/sync-konami-shops.yml';
+const SHOP_SYNC_RUN_URL = 'https://github.com/misato729/rbplus-rank-manager/actions/runs/';
 
 // 単発予約を翌朝へつなぎます。毎分トリガーは使用しません。
 function tickShopSync() {
