@@ -1,0 +1,61 @@
+<?php
+
+use App\Http\Controllers\AdminShopController;
+use App\Http\Controllers\AdminSongController;
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\LoginController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+})->middleware(['auth', 'only10']);
+
+/*
+|--------------------------------------------------------------------------
+| ログイン / ログアウト
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+});
+
+Route::post('/logout', [LoginController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+// APIのセッション認証もwebで処理し、Sanctumとのセッション処理の重複を避ける。
+Route::prefix('api')->group(function () {
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::post('/logout', function (Request $request) {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json(['message' => 'Logged out']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| 管理画面ルート（許可されたユーザーのみアクセス可）
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')
+    ->middleware(['auth', 'only10'])
+    ->group(function () {
+        Route::get('shops', [AdminShopController::class, 'index'])->name('shops.index');
+        Route::get('shops/create', [AdminShopController::class, 'create'])->name('shops.create');
+        Route::post('shops', [AdminShopController::class, 'store'])->name('shops.store');
+        Route::get('shops/{shop}/edit', [AdminShopController::class, 'edit'])->name('shops.edit');
+        Route::put('shops/{shop}', [AdminShopController::class, 'update'])->name('shops.update');
+        Route::get('songs', [AdminSongController::class, 'index'])->name('songs.index');
+        Route::get('songs/{song}/edit', [AdminSongController::class, 'edit'])->name('songs.edit');
+        Route::put('songs/{song}', [AdminSongController::class, 'update'])->name('songs.update');
+        Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+        // 他の管理画面ルートもここにまとめて追加
+    });

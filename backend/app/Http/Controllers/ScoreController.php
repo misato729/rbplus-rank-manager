@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Score;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class ScoreController extends Controller
+{
+    // ✅ ゲストでも閲覧可能なスコア取得API
+    public function index(int $userId)
+    {
+        return Score::with('song')
+            ->where('user_id', $userId)
+            ->get();
+    }
+
+    // ✅ 編集API（ログインユーザーのみ）
+    public function update(Request $request, Score $score)
+    {
+        $validated = $request->validate([
+            'rank' => ['nullable', 'string', 'max:10'],
+            'fc' => ['required', 'boolean'],
+            'memo' => ['sometimes', 'nullable', 'string', 'max:255'],
+        ]);
+
+        if ($score->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $score->update($validated);
+
+        return response()->json(['message' => 'Score updated']);
+    }
+
+    public function userScores(int $userId)
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $results = DB::table('songs')
+            ->leftJoin('scores', function ($join) use ($userId) {
+                $join->on('songs.id', '=', 'scores.song_id')
+                     ->where('scores.user_id', '=', $userId);
+            })
+            ->select(
+                'songs.id as song_id',
+                'songs.title',
+                'songs.jiriki_rank',
+                'scores.id as score_id',
+                'scores.rank',
+                'scores.fc',
+                'scores.user_id',
+                'scores.memo'
+            )
+            ->get()
+            ->map(function ($item) use ($user) {
+                $item->user_name = $user->name;
+                return $item;
+            });
+
+        return response()->json($results);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'song_id' => ['required', 'integer'],
+            'rank' => ['nullable', 'string', 'max:10'],
+            'fc' => ['required', 'boolean'],
+            'memo' => ['sometimes','nullable','string','max:255'],
+        ]);
+
+        $validated['user_id'] = $request->user()->id;
+
+        $score = Score::create($validated);
+        return response()->json($score, 201);
+    }
+}

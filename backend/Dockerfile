@@ -1,0 +1,38 @@
+# PHPとComposerが使えるベースのイメージ
+FROM php:8.3.36-fpm
+
+# 必要なパッケージをインストール
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    zip \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql zip
+
+# Composerを使えるようにする
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 作業ディレクトリを設定
+WORKDIR /var/www
+
+# Laravelのプロジェクトファイルをコピー
+COPY . .
+
+# Laravelの依存パッケージをインストール（本番用）
+RUN composer install --no-dev --optimize-autoloader
+
+# パーミッション調整
+RUN chmod -R 775 storage bootstrap/cache
+
+# 公開ポート
+EXPOSE 10000
+
+# 設定キャッシュクリア
+RUN php artisan config:clear && php artisan route:clear && php artisan view:clear
+
+# 稼働するPHPのバージョンを記録し、マイグレーションしてからサーバー起動
+CMD sh -c "php -v && php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port=10000"
