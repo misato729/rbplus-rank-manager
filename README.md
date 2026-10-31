@@ -354,6 +354,67 @@ SPAの認証はLaravel SanctumのCookie・セッション方式であり、ロ�
 - **Production Deploy**: `main` の更新をRenderへ自動デプロイ。DockerでLaravelを起動し、起動時にマイグレーションを適用する
 - **Shop Sync**: 毎日の定期実行に加え、変更候補だけを確認するdry-runと通知テストを手動実行できる
 
+## 設置店舗の自動非公開化・再公開
+
+[KONAMI公式の設置店舗検索](https://p.eagate.573.jp/game/facility/search/p/index.html?gkey=REFLECC)を取得し、公開中の店舗が検索結果から5日連続で消えていた場合に `is_deleted` を `true` にする。自動非公開化した店舗が公式検索に復帰した場合は、自動で再公開する。
+都道府県と店舗名で照合し、店舗名の全角英数字・空白の表記差を吸収する。
+
+- 全47都道府県の検索結果を正常に取得できてから更新する。設置店舗が0件の県も正常な結果として扱う。
+- 不在日数は日本時間の暦日ごとに記録する。同日の再実行で日数を増やさず、公式検索への復帰でリセットする。5日目の正常な確認で非公開化する。
+- 取得失敗や実行されなかった日を挟む場合は、5日連続の不在を確認できないため、次に正常取得できた不在日を1日目として数え直す。
+- 通信失敗や取得形式の変化を検出した場合は更新せず、エラー終了する。
+- 再公開するのは、同期処理が自動非公開にした記録（`shop_sync_states.hidden_at`）がある既存店舗だけとする。手動で非公開にした店舗や削除済み（`deleted_at` が設定された）店舗は再公開しない。
+- 管理画面で非公開の状態を保存した場合、公開状態を変更した場合、または店舗名・都道府県・住所を変更した場合は、不在日数と自動非公開の追跡をリセットする。公開中の店舗の価格・台数などだけを編集した場合は追跡を継続する。
+- 新規登録や住所・価格・台数の更新は行わない。
+- 店舗データや行脚履歴は削除しない。
+- この仕様の導入前の不在日数は推測せず、導入後の正常な確認日から数える。
+
+実行環境のデータベース設定を使い、次のコマンドで確認・更新できる。
+
+```bash
+# 変更候補の確認のみ（DB更新なし）
+php artisan shops:sync-konami --dry-run
+
+# 不在日数の記録・非公開化・再公開を実行
+php artisan shops:sync-konami
+```
+
+### 毎日の自動実行
+
+Google Apps Script（GAS）が日本時間の07:00を指定して当日分を1回だけ、GitHub Actionsの `Sync KONAMI shops` へ実行依頼する。全日の毎分起動は行わず、通常は07:00の単発予約と、予約の欠落に備えた7時台の予備確認の2回だけ実行する。起動依頼の失敗時に限り7時台だけ再試行する。KONAMIのメンテナンス時間05:00〜07:00を含め、7時台以外は自動同期を起動しない。実際の開始にはGASの起動遅延やGitHub runnerの待ち時間が加わる。
+RenderのWebサービスの起動状態に依存せず、GitHub Actionsから直接DBへ接続する。
+
+1. コードとワークフローをデフォルトブランチ（`main`）へ反映する。GASは `main` を指定して起動し、ワークフローもデフォルトブランチ以外の本番DB接続を拒否する。
+2. Renderのデプロイ完了とマイグレーション適用を確認し、通知保存用の `shop_sync_notifications` テーブルと掲載状況の追跡用の `shop_sync_states` テーブルを作成する。別の方法で配置する場合は、対象環境で `php artisan migrate --force` を実行する。通常の同期を実行する前に両テーブルの存在を確認する。
+3. リポジトリの **Settings → Secrets and variables → Actions** に `SHOP_SYNC_DATABASE_URL` を登録する。値にはGitHub Actionsから接続可能なPostgreSQLの外部接続URLを使用する。Render内部向けURLは使用できない。店舗情報・掲載状況・通知記録の読み取り・更新に必要な権限を持つDBアカウントを使用する。
+4. **Actions → Sync KONAMI shops → Run workflow** で `main` を選び、まず `dry_run` をオンにして変更候補を確認する。オフにすると更新する。GASからの通常起動時は更新する。
+
+接続URLはGitHub Secretsで管理し、ログに出力しない。このワークフローはマイグレーションやシードを実行しない。
+
+#### GASからの定期起動
+
+GitHub Actionsの予約イベントが遅延・欠落したため、追加費用なしでGoogle Apps Script（GAS）から既存のワークフローを起動する。[設定手順とコード](automation/shop-sync/README.md)を参照する。DB接続情報とSentry DSNは引き続きGitHub Secretsに保持する。
+
+GitHub側の `schedule` は削除し、起動元をGASに一本化する。`workflow_dispatch` はGASと手動確認の両方で使用する。GAS経由の実行には実行名に予定日と `GAS` が表示される。
+
+Neonのpooler接続をPHP 8.3で使用するため、PostgreSQL接続に `PDO::PGSQL_ATTR_DISABLE_PREPARES => true` を設定している。RenderとGitHub Actionsの両方に適用し、[PHPのPostgreSQLドライバー](https://www.php.net/manual/en/class.pdo-pgsql.php#pdo-pgsql.constants.attr-disable-prepares)からクエリと値を分けて送ることで、booleanを含む型推論を維持しながらPgBouncerと非互換の名前付きprepared statementを避ける。
+
+### 非公開化時のメール通知（Sentry）
+
+公式検索で5日連続の未掲載を確認し、新たに非公開化した店舗がある場合、店舗名・都道府県・住所・管理画面の編集リンクと実行元をSentryへ通知し、SentryのIssue Alertからメールを送る。不在の1〜4日目や、掲載復帰による自動再公開時は新しい通知を作成しない。
+公式検索から消えた理由は撤去だけでなく一時的な未掲載や店舗名の変更の場合もあるため、通知内容を確認する。自動非公開化した店舗が同じ都道府県・店舗名で公式検索に復帰すれば自動で再公開する。店名変更なら管理画面で公式検索と一致する店舗名へ修正し、非公開チェックを外して再公開する。
+
+1. Sentryの対象プロジェクトのDSNを、GitHub ActionsのSecret `SHOP_SYNC_SENTRY_DSN` に登録する。ローカルなどから実行する場合は同名の環境変数に設定する。
+2. Sentryで[Issue Alert](https://docs.sentry.io/product/alerts/create-alerts/issue-alert-config/)を作成する。環境を `production`、イベントのタグ条件を `event_type` が `shops_hidden`、発火条件を新規Issueの発生に設定する。非公開化の通知単位ごとにUUIDを含む[fingerprint](https://docs.sentry.io/platforms/php/usage/sdk-fingerprinting/)を使い、別の通知を新規Issueとして扱う。
+3. 通知先には希望するメールアドレスを認証済みのプライマリメールにしているSentryメンバーを選ぶ。対象プロジェクト・チームへの参加と、本人のメール通知設定を確認する。アプリ側のSMTP設定や送信元メールアドレスの設定は不要。
+4. 管理画面のURLを変更する場合は、GitHub ActionsのVariable `SHOP_SYNC_ADMIN_URL` を設定する。未設定時は `https://score-manager-backend.onrender.com` を使う。GitHub Actions外では同名環境変数を使い、省略時は `APP_URL` を使う。
+5. **Actions → Sync KONAMI shops → Run workflow** で `test_notification` をオンにして実行する。明確なテスト表示のイベントだけを送信し、店舗の状態や通知履歴は変更しない。Sentryのイベントと受信メールを確認する。通常実行時はオフに戻す。環境変数を設定した環境では `php artisan shops:test-sync-notification` でも確認できる。
+
+`--dry-run` では通知しない。新たな非公開化がなければ新しい通知は作成しないが、未送信の通知が残っていれば再送を試みる。
+DSN未設定や送信失敗の場合も店舗の非公開化は継続し、通知内容をDBに保存する。設定・通信が回復した後の通常実行で未送信分を再送する。
+導入前の未送信通知に5日連続の確認記録がない場合は、従来どおりの非公開化通知として送り、不在日数や自動再公開を推測して案内しない。
+Sentryへの送信成功とメールの到着は別の確認となるため、運用開始時にはSentry上のイベント、Alert設定、受信メールまで確認する。
+
 # 今後の展望
 
 店舗・楽曲の管理とユーザー一覧は実装済みである。今後は、運用上必要なユーザー管理機能の追加を検討していきたい。
