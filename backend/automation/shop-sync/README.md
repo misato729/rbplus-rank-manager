@@ -18,7 +18,7 @@ GASの[日次トリガーは時刻が揺れる](https://developers.google.com/ap
 
 1. [Apps Script](https://script.google.com/home)で、本人だけが編集できる独立したプロジェクト `score-manager-shop-sync` を作成する。
 2. `Code.gs` にこのディレクトリの同名ファイルを貼り付ける。プロジェクトの設定でマニフェスト表示を有効にし、`appsscript.json` も同名ファイルの内容に合わせる。タイムゾーンは `Asia/Tokyo`。
-3. GitHubで[Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new)を作る。対象リポジトリは **misato729/score-manager-backendだけ**、Repository permissionsの **Actions: Read and write** を許可する。他の追加権限は不要。期限を設定し、期限切れ前に更新する。
+3. GitHubで[Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new)を作る。対象リポジトリは **misato729/rbplus-rank-managerだけ**、Repository permissionsの **Actions: Read and write** を許可する。他の追加権限は不要。期限を設定し、期限切れ前に更新する。
 4. GASの **プロジェクトの設定 → スクリプト プロパティ** に、キー `GITHUB_TOKEN` とトークンを登録する。トークンをソース・Git・ログ・チャットへ記載しない。プロジェクト編集者はプロパティを読めるため、共有しない。
 5. GASエディタから `dispatchShopSyncDryRun` を実行する。初回にGoogleの権限確認が表示される。必要なのは外部APIへの接続と、このスクリプトのトリガー管理だけ。Gmail・Drive全体・DBへの権限は要求しない。
 6. GitHub Actionsの `Sync KONAMI shops / manual` を確認し、DB更新なしの確認が成功していることを確かめる。
@@ -44,3 +44,12 @@ node --test automation/shop-sync/Code.test.cjs
 ```
 
 実際のGoogle・GitHub APIを呼ばずに、07:00と08:00の境界、保守時間の抑止、同日重複防止、失敗時だけの再試行、翌日の予約と予備確認、旧トリガーの交換を検証する。
+
+## モノレポへの切り替え
+
+- 統合先は `misato729/rbplus-rank-manager` で、ワークフローはリポジトリ直下の `.github/workflows/sync-konami-shops.yml` に配置する。`backend/.github/workflows/` はGitHub Actionsでは認識されない。
+- 移行先のGitHub Actionsに `SHOP_SYNC_DATABASE_URL` と `SHOP_SYNC_SENTRY_DSN` をSecretとして設定する。`SHOP_SYNC_ADMIN_URL` は必要に応じてRepository Variableに設定する。
+- GASに貼り付けてある `Code.gs` もこのリポジトリの更新版に置き換える。GitHub内のファイルを編集しただけでは、デプロイ済みGASのコードは変わらない。
+- Fine-grained PATは旧リポジトリではなく `misato729/rbplus-rank-manager` への **Actions: Read and write** を持つトークンを設定し、GASのスクリプトプロパティ `GITHUB_TOKEN` を更新する。
+- 新リポジトリの `main` にワークフローが存在することを確認後、`dispatchShopSyncDryRun` を実行し、DBを変更せずに新リポジトリでActionsが起動することを検証する。その後、次の07:00の実行履歴を確認する。
+- 同じ同期処理を新旧リポジトリで二重起動しないよう、切り替えは既存のGASプロジェクト上で行う。旧リポジトリをアーカイブするのは正常稼働確認後とする。
