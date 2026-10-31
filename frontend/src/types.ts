@@ -1,0 +1,44 @@
+import { NormalRankScale, ExpertRankScale, ProRankScale } from '@/utils/rank'
+
+export type Mode = 'Normal' | 'Expert' | 'Pro'
+export type Rank = typeof NormalRankScale[number] | typeof ExpertRankScale[number] | typeof ProRankScale[number]
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  target: Rank
+  created_at: string
+  updated_at: string
+}
+
+export interface Song {
+  id: number
+  title: string
+  jiriki_rank: string
+}
+
+export interface Score {
+  id: number
+  user_id: number | null
+  song_id: number
+  rank: string | null
+  fc: boolean
+  memo?: string | null
+  created_at: string
+  updated_at: string
+  song: Song
+}
+
+export interface Shop {
+  id: number
+  name: string
+  address: string
+  prefecture_code?: number | null
+  price: number
+  number_of_machine: number
+  description: string
+  lat: number
+  lng: number
+  isOpen: boolean
+}
