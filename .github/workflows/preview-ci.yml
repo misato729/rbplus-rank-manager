@@ -76,7 +76,7 @@ jobs:
         run: ./frontend/node_modules/.bin/vercel alias set "$DEPLOY_URL" preview.rbplus-rank-manager.site --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
 
   preview-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
