@@ -78,25 +78,49 @@ jobs:
       - name: Add Vercel CLI
         run: npm i -D vercel
 
+      - name: Verify Vercel project ownership (without printing IDs)
+        working-directory: .
+        run: |
+          node --input-type=module <<'JS'
+          const { VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID } = process.env;
+          const url = new URL(`https://api.vercel.com/v9/projects/${encodeURIComponent(VERCEL_PROJECT_ID)}`);
+          if (VERCEL_ORG_ID.startsWith('team_')) url.searchParams.set('teamId', VERCEL_ORG_ID);
+          const response = await fetch(url, { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } });
+          console.log(`Project lookup HTTP status: ${response.status}`);
+          if (!response.ok) process.exit(1);
+          const project = await response.json();
+          console.log(`Configured organization is a team: ${VERCEL_ORG_ID.startsWith('team_')}`);
+          console.log(`Project owner is a team: ${project.accountId?.startsWith('team_') === true}`);
+          console.log(`Configured organization matches project owner: ${project.accountId === VERCEL_ORG_ID}`);
+          console.log(`Project ID matches: ${project.id === VERCEL_PROJECT_ID}`);
+          if (project.id !== VERCEL_PROJECT_ID || project.accountId !== VERCEL_ORG_ID) {
+            console.error('::error::VERCEL_ORG_ID must match the owner of VERCEL_PROJECT_ID. Set it to the project-owning Team ID from Vercel Team Settings > General.');
+            process.exit(1);
+          }
+          JS
+
       # Vercel プロジェクト設定を反映（Preview 環境）
       - name: vercel pull (preview)
-        run: npx vercel pull --yes --environment=preview --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+        working-directory: .
+        run: ./frontend/node_modules/.bin/vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
 
       # Vercel 互換ビルド（再現性の高い .vercel/output を作る）
       - name: vercel build
-        run: npx vercel build --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+        working-directory: .
+        run: ./frontend/node_modules/.bin/vercel build --token "$VERCEL_TOKEN"
 
       # 事前ビルドをそのままデプロイ → URL を出力
       - id: deploy
         name: vercel deploy (preview)
+        working-directory: .
         run: |
-          url=$(npx vercel deploy --prebuilt --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID")
+          url=$(./frontend/node_modules/.bin/vercel deploy --prebuilt --token "$VERCEL_TOKEN")
           echo "preview_url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed to: $url"
 
   preview-e2e:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -181,14 +205,16 @@ jobs:
         run: npm i -D vercel
 
       - name: vercel pull (production)
-        run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+        working-directory: .
+        run: ./frontend/node_modules/.bin/vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Deploy to Vercel (Production)
-        run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+        working-directory: .
+        run: ./frontend/node_modules/.bin/vercel deploy --prod --yes --token "$VERCEL_TOKEN"
 
   prod-smoke:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
