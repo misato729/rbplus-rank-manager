@@ -54,22 +54,22 @@ jobs:
         run: npm i -D vercel
 
       - name: vercel pull (preview)
-        run: npx vercel pull --yes --environment=preview --token "$VERCEL_TOKEN" ${VERCEL_ORG_SLUG:+--scope "$VERCEL_ORG_ID"}
+        run: npx vercel pull --yes --environment=preview --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
 
       - name: vercel build
-        run: npx vercel build --token "$VERCEL_TOKEN" ${VERCEL_ORG_SLUG:+--scope "$VERCEL_ORG_ID"}
+        run: npx vercel build --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
 
       - id: deploy
         name: vercel deploy (prebuilt)
         run: |
-          url=$(npx vercel deploy --prebuilt --token "$VERCEL_TOKEN" ${VERCEL_ORG_SLUG:+--scope "$VERCEL_ORG_ID"})
+          url=$(npx vercel deploy --prebuilt --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID")
           echo "Deployed to: $url"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Alias to fixed preview domain (protected)
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        run: npx vercel alias set "$DEPLOY_URL" preview.rbplus-rank-manager.site --token "$VERCEL_TOKEN" ${VERCEL_ORG_SLUG:+--scope "$VERCEL_ORG_ID"}
+        run: npx vercel alias set "$DEPLOY_URL" preview.rbplus-rank-manager.site --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
 
   preview-e2e:
     runs-on: ubuntu-latest

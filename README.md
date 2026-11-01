@@ -3,7 +3,14 @@
 [![demo](https://img.shields.io/badge/demo-open%20app-000)](https://rbplus-rank-manager.site)
 
 本リポジトリは、「REFLEC BEAT plus Lv11 難易度表＆クリアランク管理サイト」開発プロジェクトの<br>
-[フロントエンド](https://github.com/misato729/score-manager-frontend)と[バックエンド](https://github.com/misato729/score-manager-backend) の構成・機能をまとめた説明用の統合リポジトリである。実装とCI/CDは、それぞれのリポジトリで管理している。
+フロントエンド（`frontend/`）とバックエンド（`backend/`）を管理するモノレポである。CI/CDのワークフローはルートの `.github/workflows/` に配置している。
+
+## モノレポの運用設定
+
+- Vercelはこのリポジトリを接続先にして、Root Directoryを `frontend` に設定する。Actionsを使用する場合は、このリポジトリにもVercelとE2E用のSecretsを登録する。
+- Renderはこのリポジトリの `main` を接続先にして、Root Directoryを `backend`、Dockerfile Pathを `./Dockerfile`、Docker Build Contextを `.` に設定する。Blueprintを使用する場合は `backend/render.yaml` を指定する。[Renderのモノレポ設定](https://render.com/docs/monorepo-support)を参照。
+- `APP_KEY` はRenderの環境変数で管理する。`backend/render.yaml` の `sync: false` は鍵を生成・交換しない。公開されていた値を本番で使っている場合は、暗号化保存データへの影響を確認したうえで新しい鍵に交換する。旧鍵はGit履歴にも残るため、ファイルからの削除だけでは失効しない。
+- GASのコード更新、PATの対象リポジトリ変更、同期用Secretsの移行は[店舗同期の切り替え手順](backend/automation/shop-sync/README.md#モノレポへの切り替え)に従う。
 
 # フロントエンド概要
 
@@ -86,11 +93,11 @@ GitHub ActionsがLaravelの `shops:sync-konami` コマンドを実行する。KO
 - 手動で非公開にした店舗や削除済み店舗は自動再公開しない。新規店舗の登録や住所・価格・台数の自動更新は行わず、店舗データ・行脚履歴を削除しない。
 - 新たな非公開化の通知をDBに保存し、Sentryへ送る。SentryのIssue Alertを設定することでメール通知でき、未送信の通知は次回実行時に再送を試みる。
 
-手動のdry-runや通知テスト、接続・通知設定の手順は[バックエンドの運用説明](https://github.com/misato729/score-manager-backend#設置店舗の自動非公開化再公開)を参照。
+手動のdry-runや通知テスト、接続・通知設定の手順は[バックエンドの運用説明](https://github.com/misato729/rbplus-rank-manager/tree/main/backend#設置店舗の自動非公開化再公開)を参照。
 
 ## データベース構成（ER図）
 
-本アプリの主要7テーブル（ユーザー・楽曲・スコア・設置店舗・訪問履歴・店舗同期状態・通知履歴）を、[バックエンドのマイグレーション](https://github.com/misato729/score-manager-backend/tree/main/database/migrations)に基づいて示す。型は本番のPostgreSQLに合わせ、認証トークン・セッション・キャッシュ・ジョブなどのLaravel用テーブルは省略している。
+本アプリの主要7テーブル（ユーザー・楽曲・スコア・設置店舗・訪問履歴・店舗同期状態・通知履歴）を、[バックエンドのマイグレーション](https://github.com/misato729/rbplus-rank-manager/tree/main/backend/database/migrations)に基づいて示す。型は本番のPostgreSQLに合わせ、認証トークン・セッション・キャッシュ・ジョブなどのLaravel用テーブルは省略している。
 
 ```mermaid
 erDiagram
@@ -235,7 +242,7 @@ PKは主キー、FKは外部キー、UKは一意キーを表す。ユーザー�
 
 ## フロントエンドのCI/CD
 
-[フロントエンドのGitHub Actions](https://github.com/misato729/score-manager-frontend/tree/main/.github/workflows)とVercelで実行する。
+[フロントエンドのGitHub Actions](.github/workflows/frontend-ci.yml)とVercelで実行する。
 
 - **Unit Test**: Vitestでカバレッジ付きのテストを実行
 - **Preview Deploy / E2E**: 非DraftのPRをVercel Previewへ配信し、Playwrightで確認。Preview保護の回避設定を使用する
@@ -348,7 +355,7 @@ SPAの認証はLaravel SanctumのCookie・セッション方式であり、ロ�
 
 ## バックエンドのCI/CD
 
-[バックエンドのGitHub Actions](https://github.com/misato729/score-manager-backend/tree/main/.github/workflows)でテスト・店舗同期を実行し、Renderと `main` を連携している。
+[バックエンドのGitHub Actions](.github/workflows/backend-ci.yml)でテスト・店舗同期を実行し、Renderと `main` を連携している。
 
 - **Feature Test**: `main` のpush・PRでPHPUnitを実行。SQLiteのテストに加えて、店舗API・同期・通知・店舗管理・ユーザー一覧はPostgreSQLでも検証する
 - **Production Deploy**: `main` の更新をRenderへ自動デプロイ。DockerでLaravelを起動し、起動時にマイグレーションを適用する
@@ -393,7 +400,7 @@ RenderのWebサービスの起動状態に依存せず、GitHub Actionsから直
 
 #### GASからの定期起動
 
-GitHub Actionsの予約イベントが遅延・欠落したため、追加費用なしでGoogle Apps Script（GAS）から既存のワークフローを起動する。[設定手順とコード](automation/shop-sync/README.md)を参照する。DB接続情報とSentry DSNは引き続きGitHub Secretsに保持する。
+GitHub Actionsの予約イベントが遅延・欠落したため、追加費用なしでGoogle Apps Script（GAS）から既存のワークフローを起動する。[設定手順とコード](backend/automation/shop-sync/README.md)を参照する。DB接続情報とSentry DSNは引き続きGitHub Secretsに保持する。
 
 GitHub側の `schedule` は削除し、起動元をGASに一本化する。`workflow_dispatch` はGASと手動確認の両方で使用する。GAS経由の実行には実行名に予定日と `GAS` が表示される。
 
@@ -419,8 +426,8 @@ Sentryへの送信成功とメールの到着は別の確認となるため、�
 
 店舗・楽曲の管理とユーザー一覧は実装済みである。今後は、運用上必要なユーザー管理機能の追加を検討していきたい。
 
-## 各リポジトリリンク
+## ソースコード
 
-- [フロントエンド](https://github.com/misato729/score-manager-frontend)  
-- [バックエンド](https://github.com/misato729/score-manager-backend)  
+- [フロントエンド](https://github.com/misato729/rbplus-rank-manager/tree/main/frontend)
+- [バックエンド](https://github.com/misato729/rbplus-rank-manager/tree/main/backend)
 

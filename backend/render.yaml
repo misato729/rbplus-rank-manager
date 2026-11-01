@@ -4,6 +4,7 @@ services:
     env: docker
     plan: free
     branch: main
+    rootDir: backend
     dockerfilePath: ./Dockerfile
     buildCommand: ""
     startCommand: ""
@@ -11,6 +12,6 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        value: base64:fx/EOA3Oli6Z3l3NwKtZc1R8VImWylMjfbELClDaUr8=
+        sync: false
       - key: APP_URL
         value: https://score-manager-backend.onrender.com/
