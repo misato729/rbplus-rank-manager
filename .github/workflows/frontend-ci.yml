@@ -78,6 +78,23 @@ jobs:
       - name: Add Vercel CLI
         run: npm i -D vercel
 
+      - name: Check Vercel project ownership (without printing IDs)
+        working-directory: .
+        run: |
+          node --input-type=module <<'JS'
+          const { VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID } = process.env;
+          const url = new URL(`https://api.vercel.com/v9/projects/${encodeURIComponent(VERCEL_PROJECT_ID)}`);
+          if (VERCEL_ORG_ID.startsWith('team_')) url.searchParams.set('teamId', VERCEL_ORG_ID);
+          const response = await fetch(url, { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } });
+          console.log(`Project lookup HTTP status: ${response.status}`);
+          if (!response.ok) process.exit(1);
+          const project = await response.json();
+          console.log(`Configured organization is a team: ${VERCEL_ORG_ID.startsWith('team_')}`);
+          console.log(`Project owner is a team: ${project.accountId?.startsWith('team_') === true}`);
+          console.log(`Configured organization matches project owner: ${project.accountId === VERCEL_ORG_ID}`);
+          console.log(`Project ID matches: ${project.id === VERCEL_PROJECT_ID}`);
+          JS
+
       # Vercel プロジェクト設定を反映（Preview 環境）
       - name: vercel pull (preview)
         working-directory: .
