@@ -128,7 +128,7 @@ function inspectShopSyncSetup() {
   const state = {
     timeZone: SHOP_SYNC_TIME_ZONE,
     lastDispatchDay: /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null,
-    lastRunUrl: /^https:\/\/github\.com\/misato729\/score-manager-backend\/actions\/runs\/\d+$/.test(runUrl) ? runUrl : null,
+    lastRunUrl: /^https:\/\/github\.com\/misato729\/rbplus-rank-manager\/actions\/runs\/\d+$/.test(runUrl) ? runUrl : null,
     nextTriggerAt: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(next) ? next : null
   };
   console.log(JSON.stringify(state));

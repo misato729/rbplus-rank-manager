@@ -2,7 +2,7 @@
 
 本プロジェクトは、[REFLEC BEAT plus レベル11 難易度表＆クリアランク管理サイト](https://rbplus-rank-manager.site/)のバックエンドリポジトリである。
 
-　※フロントエンドのリポジトリは[こちら](https://github.com/misato729/score-manager-frontend)
+　※フロントエンドのリポジトリは[こちら](https://github.com/misato729/rbplus-rank-manager/tree/main/frontend)
 
 用途は以下の2つである。
 

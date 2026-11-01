@@ -432,3 +432,12 @@ test('an accepted dispatch with an unreadable response is recorded and never dis
   assert.equal(app.requests.length, 1);
   assert.doesNotMatch(JSON.stringify(result) + app.logs.join('\n'), new RegExp(token));
 });
+
+
+test('setup inspection preserves the monorepo run URL and rejects unrelated URLs', () => {
+  const runUrl = 'https://github.com/misato729/rbplus-rank-manager/actions/runs/123456';
+  const valid = harness({ properties: { SHOP_SYNC_LAST_RUN_URL: runUrl } });
+  assert.equal(valid.context.inspectShopSyncSetup().lastRunUrl, runUrl);
+  const unrelated = harness({ properties: { SHOP_SYNC_LAST_RUN_URL: 'https://example.com/actions/runs/123456' } });
+  assert.equal(unrelated.context.inspectShopSyncSetup().lastRunUrl, null);
+});

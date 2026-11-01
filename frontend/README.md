@@ -102,11 +102,11 @@ Google Apps Script（GAS）が毎日07:00（日本時間）を指定してGitHub
 
 GitHub ActionsでLaravelの `shops:sync-konami` コマンドを実行し、KONAMI公式検索の全47都道府県を取得してNeonの店舗情報と照合する。全件を正常に取得した後、5日連続で未掲載の店舗を非公開にし、自動非公開にした店舗が復帰した場合は再公開する。新たな非公開化をSentry経由でメール通知する。Renderの起動状態には依存しない。
 
-取得に失敗した場合は店舗情報を更新しない。起動依頼の受付後に同期処理が失敗した場合は、自動で再実行せず原因確認後に手動実行する。詳細は[バックエンドの運用説明](https://github.com/misato729/score-manager-backend#設置店舗の自動非公開化再公開)を参照。
+取得に失敗した場合は店舗情報を更新しない。起動依頼の受付後に同期処理が失敗した場合は、自動で再実行せず原因確認後に手動実行する。詳細は[バックエンドの運用説明](https://github.com/misato729/rbplus-rank-manager/tree/main/backend#設置店舗の自動非公開化再公開)を参照。
 
 ## データベース構成（ER図）
 
-本アプリの主要5テーブル（ユーザー・楽曲・スコア・設置店舗・訪問履歴）を、[バックエンドのマイグレーション](https://github.com/misato729/score-manager-backend/tree/main/database/migrations)に基づいて示す。認証トークン・セッション・キャッシュ・ジョブなどのLaravel用テーブルは省略している。
+本アプリの主要5テーブル（ユーザー・楽曲・スコア・設置店舗・訪問履歴）を、[バックエンドのマイグレーション](https://github.com/misato729/rbplus-rank-manager/tree/main/backend/database/migrations)に基づいて示す。認証トークン・セッション・キャッシュ・ジョブなどのLaravel用テーブルは省略している。
 
 ```mermaid
 erDiagram
