@@ -78,7 +78,7 @@ jobs:
       - name: Add Vercel CLI
         run: npm i -D vercel
 
-      - name: Check Vercel project ownership (without printing IDs)
+      - name: Verify Vercel project ownership (without printing IDs)
         working-directory: .
         run: |
           node --input-type=module <<'JS'
@@ -93,6 +93,10 @@ jobs:
           console.log(`Project owner is a team: ${project.accountId?.startsWith('team_') === true}`);
           console.log(`Configured organization matches project owner: ${project.accountId === VERCEL_ORG_ID}`);
           console.log(`Project ID matches: ${project.id === VERCEL_PROJECT_ID}`);
+          if (project.id !== VERCEL_PROJECT_ID || project.accountId !== VERCEL_ORG_ID) {
+            console.error('::error::VERCEL_ORG_ID must match the owner of VERCEL_PROJECT_ID. Set it to the project-owning Team ID from Vercel Team Settings > General.');
+            process.exit(1);
+          }
           JS
 
       # Vercel プロジェクト設定を反映（Preview 環境）
